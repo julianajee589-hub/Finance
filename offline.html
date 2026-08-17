@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#3977e6" />
+  <meta name="description" content="多币种资产、负债、预算与现金流离线记账本" />
+  <title>Juliana 离线财务总账</title>
+  <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="app-icon-180.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><img src="app-icon.svg" alt="" /></div>
+        <div><h1>Juliana 的财务总账</h1><p>现金流、账户、负债与净资产</p></div>
+      </div>
+      <div class="top-actions">
+        <label class="compact-control"><span>月份</span><input id="globalMonth" type="month" /></label>
+        <label class="compact-control"><span>统一显示</span><select id="reportCurrency"><option value="AUD">AUD 澳元</option><option value="HKD">HKD 港币</option></select></label>
+        <button class="primary-button" data-open-entry>＋ 记一笔</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <nav>
+          <button class="nav-button active" data-view="dashboard"><span>⌂</span>财务总览</button>
+          <button class="nav-button" data-view="monthly"><span>↕</span>月度收支与预算</button>
+          <button class="nav-button" data-view="accounts"><span>▣</span>账户与负债</button>
+          <button class="nav-button" data-view="settings"><span>⚙</span>汇率与数据</button>
+        </nav>
+        <div class="privacy-note"><b>● 完全离线</b><br />财务数据只保存在当前浏览器，不会上传服务器。</div>
+      </aside>
+
+      <main>
+        <section id="dashboard" class="view active">
+          <div class="section-head">
+            <div><h2>你的财务全景</h2><p>资产 − 负债 = 净资产；转账和还款不重复计入支出。</p></div>
+            <span class="offline-badge">● 本机数据</span>
+          </div>
+          <div id="fxWarning" class="notice hidden"></div>
+          <div class="summary-grid">
+            <article class="summary-card hero-card"><div class="summary-label">净资产</div><div id="netWorthValue" class="summary-value">A$0.00</div><div id="netWorthSub" class="summary-sub">全部资产减去全部负债</div></article>
+            <article class="summary-card"><div class="summary-label">💳 流动资产</div><div id="assetValue" class="summary-value blue">A$0.00</div><div id="assetSub" class="summary-sub">0 个现金账户</div></article>
+            <article class="summary-card"><div class="summary-label">⚠ 负债总额</div><div id="liabilityValue" class="summary-value negative">A$0.00</div><div id="liabilitySub" class="summary-sub">0 个负债账户</div></article>
+            <article class="summary-card"><div class="summary-label">↔ 本月结余</div><div id="monthlyNetValue" class="summary-value positive">A$0.00</div><div id="monthlyNetSub" class="summary-sub">本月收入减支出</div></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">现金在哪里</div><div class="card-sub">银行卡、现金与平台余额</div></div><button class="text-button" data-go="accounts">管理账户 →</button></div>
+              <div id="assetSnapshot" class="snapshot-grid"></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">信用卡与待还</div><div class="card-sub">还款属于资金转移，不算新的支出</div></div><button class="text-button" data-go="accounts">查看负债 →</button></div>
+              <div id="debtSnapshot"></div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid lower-grid">
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">月度预算进度</div><div class="card-sub">预算与月报统一使用当前显示货币</div></div><button class="text-button" data-go="monthly">记账与预算 →</button></div>
+              <div id="budgetProgress"></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">本月支出去向</div><div class="card-sub">仅统计真实消费，不含转账和还款</div></div></div>
+              <div id="expenseChart" class="donut-wrap"></div>
+            </article>
+          </div>
+
+          <article class="card recent-card">
+            <div class="card-head"><div><div class="card-title">最近流水</div><div class="card-sub">原币金额与统一折算结果同时保留</div></div><button class="text-button" data-go="monthly">查看本月 →</button></div>
+            <div id="recentTransactions" class="transaction-list"></div>
+          </article>
+        </section>
+
+        <section id="monthly" class="view">
+          <div class="section-head"><div><h2>月度收支与预算</h2><p id="budgetCurrencyHint">记一笔支出后，对应分类的已用、剩余或超支金额会立即更新。</p></div><div class="button-row"><button id="saveBudget" class="soft-button">保存预算</button><button class="primary-button" data-open-entry>＋ 记一笔</button></div></div>
+          <div class="mini-stats monthly-stats">
+            <div><span>本月收入</span><strong id="txIncome">A$0.00</strong></div>
+            <div><span>本月支出</span><strong id="txExpense">A$0.00</strong></div>
+            <div><span>本月总预算</span><strong id="budgetTotal">A$0.00</strong></div>
+            <div id="overallBudgetCard"><span>总预算状态</span><strong id="overallBudgetStatus">不设额度</strong><small id="overallBudgetSub">所有分类预算均为 0.00</small></div>
+          </div>
+          <details id="budgetDetails" class="card monthly-budget-card" open>
+            <summary class="budget-summary">
+              <div><div class="card-title">衣食住行分类预算</div><div class="card-sub">已用金额来自本月流水；0.00 表示该分类不设置预算额度</div></div>
+              <div class="budget-summary-right"><span id="txTransferCount" class="transfer-note">0 笔转账/还款未计入支出</span><span class="collapse-label"><span class="expanded-label">收起</span><span class="collapsed-label">展开</span><i>⌄</i></span></div>
+            </summary>
+            <div class="budget-details-body">
+              <div class="budget-column-head"><span>类别</span><span>本月已用</span><span>预算</span><span>剩余 / 超支</span></div>
+              <div id="budgetInputs" class="monthly-budget-list"></div>
+            </div>
+          </details>
+          <article class="card monthly-ledger-card">
+            <div class="card-head"><div><div class="card-title">本月流水</div><div class="card-sub">新增或编辑支出后，上方预算会同步变化</div></div></div>
+            <div class="filters">
+              <input id="searchInput" class="field-input" type="search" placeholder="搜索备注、类别或账户…" />
+              <select id="typeFilter" class="field-select"><option value="all">全部类型</option><option value="expense">支出</option><option value="income">收入</option><option value="transfer">转账/还款</option></select>
+              <select id="categoryFilter" class="field-select"><option value="all">全部类别</option></select>
+            </div>
+            <div id="allTransactions" class="transaction-list full-list"></div>
+          </article>
+        </section>
+
+        <section id="accounts" class="view">
+          <div class="section-head">
+            <div><h2>账户、现金与负债</h2><p>余额代表此刻的真实金额；可随时手动校准。</p></div>
+            <div class="button-row"><button class="soft-button" data-open-account="asset">＋ 资产账户</button><button class="primary-button" data-open-account="liability">＋ 信用卡/负债</button></div>
+          </div>
+          <div class="account-summary">
+            <div class="asset-band"><span>资产合计</span><strong id="accountAssetTotal">A$0.00</strong></div>
+            <div class="debt-band"><span>负债合计</span><strong id="accountDebtTotal">A$0.00</strong></div>
+            <div class="net-band"><span>净资产</span><strong id="accountNetTotal">A$0.00</strong></div>
+          </div>
+          <div class="account-section-head"><div><h3>现金与资产账户</h3><p>现金、银行卡、电子钱包及储蓄账户</p></div></div>
+          <div id="assetAccounts" class="account-grid"></div>
+          <div class="account-section-head debt-heading"><div><h3>信用卡与其他负债</h3><p>当前欠款、账单应还和下次还款日分开记录</p></div></div>
+          <div id="liabilityAccounts" class="account-grid"></div>
+        </section>
+
+        <section id="settings" class="view">
+          <div class="section-head"><div><h2>汇率与数据</h2><p>离线账本不会自动获取实时汇率，换算值由你控制。</p></div></div>
+          <div class="settings-grid">
+            <article class="card rate-card">
+              <div class="card-head"><div><div class="card-title">默认换算率</div><div class="card-sub">用于账户净资产和未填写手动折算值的流水</div></div><button id="saveRates" class="primary-button">保存汇率</button></div>
+              <div class="rate-help">输入“1 单位原币”等于多少澳元/港币。例如：1 THB = 0.04 AUD。身份汇率固定为 1。</div>
+              <div class="rate-table">
+                <div class="rate-row rate-header"><span>原币</span><span>折算 AUD</span><span>折算 HKD</span></div>
+                <div id="rateInputs"></div>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">换算规则</div><div class="card-sub">避免历史月报因汇率变化而失真</div></div></div>
+              <ol class="rule-list">
+                <li><b>流水优先：</b>条目里填写的 AUD/HKD 实际折算值。</li>
+                <li><b>其次：</b>原币与月报货币相同时直接使用原金额。</li>
+                <li><b>最后：</b>使用这里设置的默认换算率。</li>
+                <li><b>无汇率：</b>不纳入统一合计，并显示“待补换算”。</li>
+              </ol>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">备份与恢复</div><div class="card-sub">更换设备或清理浏览器前务必备份</div></div></div>
+              <div class="setting-copy">JSON 可完整恢复账户、负债、换算值与预算；CSV 适合查看流水。</div>
+              <div class="data-actions"><button id="exportJson" class="soft-button">导出完整备份</button><button id="exportCsv" class="soft-button">导出流水 CSV</button><button id="importButton" class="soft-button">导入备份</button><input id="importFile" class="hidden" type="file" accept="application/json,.json" /></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><div><div class="card-title">当前数据</div><div id="dataSummary" class="card-sub">0 个账户 · 0 笔流水</div></div><span class="offline-badge">● 离线</span></div>
+              <div class="danger-zone"><div><b>清空全部财务数据</b><span>此操作无法撤销。</span></div><button id="clearData" class="danger-button">清空</button></div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <button class="fab" data-open-entry aria-label="记一笔">＋</button>
+  <nav class="mobile-nav">
+    <button class="active" data-view="dashboard"><i>⌂</i>总览</button>
+    <button data-view="monthly"><i>↕</i>月度</button>
+    <button data-view="accounts"><i>▣</i>账户</button>
+    <button data-view="settings"><i>⚙</i>设置</button>
+  </nav>
+
+  <dialog id="entryDialog">
+    <form id="entryForm" class="modal" method="dialog">
+      <div class="modal-head"><div><h3 id="entryTitle">记一笔</h3><p id="entrySubtitle">记录真实消费、收入或资金移动</p></div><button id="closeEntry" class="icon-button" type="button">✕</button></div>
+      <div class="type-toggle three"><button id="expenseToggle" class="active expense" type="button">支出</button><button id="incomeToggle" type="button">收入</button><button id="transferToggle" type="button">转账 / 还款</button></div>
+      <div class="form-grid">
+        <div class="form-field"><label for="amountInput">原始金额</label><input id="amountInput" class="field-input big-input" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required /></div>
+        <div class="form-field"><label for="currencyInput">原始货币</label><select id="currencyInput" class="field-select currency-options"></select></div>
+        <div id="categoryField" class="form-field"><label for="categoryInput">收支类别</label><select id="categoryInput" class="field-select"></select></div>
+        <div class="form-field"><label for="dateInput">日期</label><input id="dateInput" class="field-input" type="date" required /></div>
+        <div class="form-field full"><label id="accountLabel" for="accountInput">付款账户</label><select id="accountInput" class="field-select" required></select></div>
+        <div id="accountAmountField" class="form-field full hidden"><label for="accountAmountInput">记入账户的实际金额 <span id="accountCurrencyHint"></span></label><input id="accountAmountInput" class="field-input" type="number" min="0.01" step="0.01" inputmode="decimal" /></div>
+        <div id="targetField" class="form-field full hidden"><label for="targetAccountInput">转入账户 / 待还信用卡</label><select id="targetAccountInput" class="field-select"></select></div>
+        <div id="targetAmountField" class="form-field full hidden"><label for="targetAmountInput">转入账户实际收到/抵扣金额 <span id="targetCurrencyHint"></span></label><input id="targetAmountInput" class="field-input" type="number" min="0.01" step="0.01" inputmode="decimal" /></div>
+        <div id="conversionFields" class="conversion-box full">
+          <div><b>本条目的手动折算（可选）</b><span>填写后优先用于月报，适合保留当日实际汇率结果。</span></div>
+          <div class="conversion-grid"><label>AUD 澳元<input id="audConverted" class="field-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="自动/待补" /></label><label>HKD 港币<input id="hkdConverted" class="field-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="自动/待补" /></label></div>
+        </div>
+        <div class="form-field full"><label for="noteInput">备注（可选）</label><input id="noteInput" class="field-input" maxlength="80" placeholder="例如：午餐、HSBC 转账、信用卡还款…" /></div>
+      </div>
+      <div class="modal-actions"><button id="cancelEntry" class="soft-button" type="button">取消</button><button class="primary-button" type="submit">保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <form id="accountForm" class="modal" method="dialog">
+      <div class="modal-head"><div><h3 id="accountTitle">新增资产账户</h3><p>余额应填写当前真实余额</p></div><button id="closeAccount" class="icon-button" type="button">✕</button></div>
+      <input id="accountKind" type="hidden" />
+      <div class="form-grid">
+        <div class="form-field full"><label for="accountName">账户名称</label><input id="accountName" class="field-input" maxlength="30" placeholder="例如：汇丰香港、支付宝、现金" required /></div>
+        <div class="form-field"><label for="accountType">账户类型</label><select id="accountType" class="field-select"></select></div>
+        <div class="form-field"><label for="accountCurrency">账户货币</label><select id="accountCurrency" class="field-select currency-options"></select></div>
+        <div class="form-field full"><label id="balanceLabel" for="accountBalance">当前余额</label><input id="accountBalance" class="field-input big-input" type="number" min="0" step="0.01" inputmode="decimal" value="0.00" required /></div>
+        <div id="liabilityFields" class="liability-fields full hidden">
+          <div class="form-field"><label for="statementDue">本期账单应还</label><input id="statementDue" class="field-input" type="number" min="0" step="0.01" inputmode="decimal" value="0.00" /></div>
+          <div class="form-field"><label for="minimumDue">最低还款额</label><input id="minimumDue" class="field-input" type="number" min="0" step="0.01" inputmode="decimal" value="0.00" /></div>
+          <div class="form-field"><label for="nextDueDate">下次还款日</label><input id="nextDueDate" class="field-input" type="date" /></div>
+          <div class="form-field"><label for="statementDay">每月账单日（可选）</label><input id="statementDay" class="field-input" type="number" min="1" max="31" placeholder="例如 21" /></div>
+        </div>
+      </div>
+      <div class="modal-actions"><button id="deleteAccount" class="danger-button hidden" type="button">删除账户</button><span class="modal-spacer"></span><button id="cancelAccount" class="soft-button" type="button">取消</button><button class="primary-button" type="submit">保存账户</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

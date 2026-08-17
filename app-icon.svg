@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="44" x2="448" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#73B4FF"/><stop offset=".52" stop-color="#377BE8"/><stop offset="1" stop-color="#2356B8"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="330" y1="296" x2="420" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7CE5C0"/><stop offset="1" stop-color="#31B889"/>
+    </linearGradient>
+    <filter id="shadow" x="70" y="90" width="380" height="340" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="16" stdDeviation="15" flood-color="#123A83" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
+  <circle cx="105" cy="87" r="92" fill="#fff" opacity=".09"/>
+  <circle cx="437" cy="439" r="122" fill="#123E92" opacity=".12"/>
+  <g filter="url(#shadow)">
+    <path d="M119 177c0-29 23-52 52-52h165c18 0 33 15 33 33v24h16c18 0 33 15 33 33v146c0 18-15 33-33 33H165c-25 0-46-20-46-46V177Z" fill="#fff"/>
+    <path d="M119 180c0 24 20 44 44 44h206v-42H169c-13 0-24-11-24-24s11-24 24-24h165" fill="none" stroke="#DCEAFF" stroke-width="18" stroke-linecap="round"/>
+    <path d="M317 249h101v91H317c-25 0-45-20-45-45v-1c0-25 20-45 45-45Z" fill="url(#mint)"/>
+    <circle cx="326" cy="295" r="14" fill="#fff"/>
+  </g>
+</svg>

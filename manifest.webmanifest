@@ -1,0 +1,14 @@
+{
+  "name": "Juliana 的财务总账",
+  "short_name": "财务总账",
+  "start_url": "./offline.html",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#3977e6",
+  "description": "多币种资产、负债、预算与现金流离线记账本",
+  "icons": [
+    { "src": "app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
